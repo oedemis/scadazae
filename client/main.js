@@ -5,10 +5,12 @@ import './main.html';
 
 // subscribe to the published collection
 Meteor.subscribe("mqttMessages");
+Meteor.subscribe("mqttBatteryLogs");
 
 
 // we need a dependency later on to refresh the topic query
 var topicDep = new Deps.Dependency;
+
 
 // this is the dependend function to retrieve and set the topic query
 Deps.autorun(function(){
@@ -81,6 +83,21 @@ Template.publish.events({
    }
 });
 
+Template.SIControl.events({
+  'click .deactivate'() {
+		Meteor.call('deactivate');
+	},
+	'click .activate'() {
+		Meteor.call('activate');
+	},
+  'submit .write'(event) {
+    event.preventDefault();
+		const target = event.target;
+		const text   = target.text.value;
+		Meteor.call('writeActivePower', text);
+  }
+});
+
 // get the new query from the input field and send it to the server, reset field
 // tell the dependency, that it has changed and has to be run again
 var _sendTopic = function() {
@@ -92,6 +109,7 @@ var _sendTopic = function() {
         el.focus();
     });
 };
+
 
 
 /*
