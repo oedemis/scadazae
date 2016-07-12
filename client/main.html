@@ -6,15 +6,12 @@
 
 
  <div class="container-fluid">
-        <h1>Sunny Island MQTT Dashboard</h1>
+        <h1>SGS MQTT Dashboard</h1>
         {{> config}}
         {{> admin}}
         <div class="row">
             <div class="col-lg-6">
                 {{> topic}}
-            </div>
-            <div class="col-lg-6">
-                {{> publish}}
             </div>
         </div>
         {{> messages}}
@@ -37,7 +34,7 @@
 
 <template name="topic">
     <h2>Topic Query</h2>
-    <input type="text" id="topicQuery" placeholder="e.g. my/topic/#">
+    <input type="text" id="topicQuery" placeholder="e.g. si/# (Sunny Island)">
     <button id="sendTopicQuery" class="btn btn-primary">Send topic query</button>
 </template>
 
