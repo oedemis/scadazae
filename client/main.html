@@ -1,0 +1,77 @@
+<head>
+  <title>zaescada</title>
+</head>
+
+<body>
+
+
+ <div class="container-fluid">
+        <h1>Sunny Island MQTT Dashboard</h1>
+        {{> config}}
+        {{> admin}}
+        <div class="row">
+            <div class="col-lg-6">
+                {{> topic}}
+            </div>
+            <div class="col-lg-6">
+                {{> publish}}
+            </div>
+        </div>
+        {{> messages}}
+  </div>
+  
+
+</body>
+
+<template name="admin">
+    <div>
+        <button id="startClient" class="btn btn-success">Start subscription</button>
+        <button id="stopClient" class="btn btn-danger">Stop subscription</button>
+    </div>
+</template>
+
+<template name="config">
+    <p><mark>Broker: {{host}}:{{port}}</mark></p>
+</template>
+
+
+<template name="topic">
+    <h2>Topic Query</h2>
+    <input type="text" id="topicQuery" placeholder="e.g. my/topic/#">
+    <button id="sendTopicQuery" class="btn btn-primary">Send topic query</button>
+</template>
+
+<template name="messages">
+    <h2>Messages for topic query <mark><em>{{topicQuery}}</em></mark></h2>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>Time</th>
+            <th>Topic</th>
+            <th>Message</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each lastMessages}}
+            {{> msg}}
+        {{/each}}
+        </tbody>
+    </table>
+</template>
+
+<template name="msg">
+    <tr>
+        <td>{{tsString}}</td>
+        <td>{{topic}}</td>
+        <td>{{message}}</td>
+    </tr>
+</template>
+
+<template name="publish">
+    <h2>Publish a message</h2>
+    <input type="text" id="topic" placeholder="topic" /><br />
+    <input type="text" id="message" placeholder="message" />
+    <button id="publishMessage" class="btn btn-info">Publish Message</button>
+</template>
+
+
