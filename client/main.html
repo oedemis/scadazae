@@ -1,15 +1,15 @@
 <head>
-  <title>zaescada</title>
+    <title>zaescada</title>
 </head>
 
 <body>
 </body>
 
 <template name="ApplicationLayout">
-  <div class="container-fluid">
-     {{> Nav}}
-     {{> yield}}
-   </div>
+    <div class="container-fluid">
+        {{> Nav}}
+        {{> yield}}
+    </div>
 </template>
 
 <template name="admin">
@@ -20,7 +20,9 @@
 </template>
 
 <template name="config">
-    <p><mark>Broker: {{host}}:{{port}}</mark></p>
+    <p>
+        <mark>Broker: {{host}}:{{port}}</mark>
+    </p>
 </template>
 
 
@@ -31,7 +33,9 @@
 </template>
 
 <template name="messages">
-    <h2>Messages for topic query <mark><em>{{topicQuery}}</em></mark></h2>
+    <h2>Messages for topic query
+        <mark><em>{{topicQuery}}</em></mark>
+    </h2>
     <table border="1">
         <thead>
         <tr>
@@ -58,57 +62,67 @@
 
 <template name="publish">
     <h2>Publish a message</h2>
-    <input type="text" id="topic" placeholder="topic" /><br />
-    <input type="text" id="message" placeholder="message" />
+    <input type="text" id="topic" placeholder="topic"/><br/>
+    <input type="text" id="message" placeholder="message"/>
     <button id="publishMessage" class="btn btn-info">Publish Message</button>
 </template>
 
 <template name="Nav">
-  <header class="navbar navbar-default" role="navigation">
-   <div class="navbar-header">
-     <a class="navbar-brand" href="/">MQTT</a>
-   </div>
-   <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-     <ul class="nav navbar-nav">
-        <li><a href="/plots">SI Plots</a></li>
-        <li><a href="/sicontrol">SI Control</a></li>
-        <li><a href="/nodered">Node-Red</a></li>
-        <li><a href="/batterylogs">Logs</a></li>
-     </ul>
-   </div>
- </header>
+    <header class="navbar navbar-default" role="navigation">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="/">MQTT</a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                <li><a href="/plots">SI Plots</a></li>
+                <li><a href="/sicontrol">SI Control</a></li>
+                <li><a href="/nodered">Node-Red</a></li>
+                <li><a href="/batterylogs">Logs</a></li>
+            </ul>
+        </div>
+    </header>
 </template>
 
 <template name="Home">
-  <h1>SGS MQTT Dashboard</h1>
-  {{> config}}
-  {{> admin}}
-  <div class="row">
-      <div class="col-lg-6">
-          {{> topic}}
-      </div>
-  </div>
-  {{> messages}}
+    <h1>SGS MQTT Dashboard</h1>
+    {{> config}}
+    {{> admin}}
+    <div class="row">
+        <div class="col-lg-6">
+            {{> topic}}
+        </div>
+    </div>
+    {{> messages}}
 </template>
 
 <template name="Plot">
-  Ploting?
+    Ploting?
 </template>
 
 <template name="SIControl">
-  <form class="write">
-      <input type="text" name="text" class="pvalue" placeholder="Wirkleistung" />
-      <input type="submit" value="Set">
-  </form><br/>
-  <!--<button class="writeActivePower">Set</button> <br/><br/>-->
-  <button class="activate"><i>Deactivate</i></button>
-  <button class="deactivate"><i>Activate</i></button>
+    <form>
+        <input type="text" name="text" class="pvalue" placeholder="Wirkleistung"/>
+        <input type="submit" value="Set">
+    </form>
+    <br/>
+    <!--<button class="writeActivePower">Set</button> <br/><br/>-->
+    <button class="activate"><i>Activate</i></button>
+    <button class="deactivate"><i>Deactivate</i></button>
+    <br/><br/>
+
+    {{#unless uploading}}
+        <input type="file" name="uploadCSV">
+    {{else}}
+        <p><i class="fa fa-spin fa-refresh"></i> Uploading files...</p>
+    {{/unless}}
+
+    <button class="startIteration"><i>Start</i></button>
 </template>
 
 <template name="Batterylogs">
-  Logs from DB
+    Logs from DB
 </template>
 
 <template name="NodeRed">
-  NodeRed
+    NodeRed
 </template>
