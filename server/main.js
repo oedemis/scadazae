@@ -2,6 +2,8 @@ import { Meteor } from 'meteor/meteor';
 import mqtt from 'mqtt';
 import modbus from 'h5.modbus';
 import net from 'net';
+import sleep from 'sleep';
+
 
 let topicQuery;
 let master;
@@ -26,7 +28,7 @@ Meteor.startup(() => {
         },
         suppressTransactionErrors: false,
         retryOnException: true,
-        maxConcurrentRequests: 1,
+        maxConcurrentRequests: 3,
         defaultUnit: 3,
         defaultMaxRetries: 3,
         defaultTimeout: 100
@@ -207,16 +209,15 @@ Meteor.methods({
          *    2) contruct buffer object
          *    3) write with modbus t=seconds long
          *    4) log the data via mqtt
-         */
-        /*ControlStrategy.find({}, {limit: 5}).forEach((d) => {
-         //console.log(d.duration);
-         mqttClient.publish('logs', JSON.stringify(d));
-         });*/
-        let soc;
+         **/
+
+        /*let soc;
         let jsondata = {};
+
+
         master.readHoldingRegisters(30845, 2, {
             unit: 3,
-            maxRetries: 3,
+            maxRetries: 1,
             timeout: 6000,
             interval: 8000,
             onComplete: function (err, response) {
@@ -235,33 +236,48 @@ Meteor.methods({
             let b = new Buffer(4);
             b.writeInt32BE((data[i].residual * 1000).toFixed(0), 0);
             let buf = new Buffer(b);
-            console.log("Modbus Write: " + buf.readInt32BE(0));
+            //console.log("Modbus Write: " + buf.readInt32BE(0));
 
             master.writeMultipleRegisters(40149, buf, {
                 unit: 3,
-                maxRetries: 3,
-                timeout: 6000,
+                maxRetries: 1,
+                timeout: 5000,
                 interval: -1,
-                onComplete: function(err, response) {
+                onComplete: function (err, response) {
                     if (err) {
                         console.err(err.message);
                         console.err('I make the error here!');
-                    }else {
-                        jsondata.t          = data[i].t;
-                        jsondata.charge     = data[i].charge;
-                        jsondata.discharge  = data[i].discharge;
-                        jsondata.soc_soll   = data[i].soc;
-                        jsondata.soc_ist    = soc;
-                        jsondata.residual   = data[i].residual;
+                        jsondata.t = data[i].t;
+                        jsondata.charge = data[i].charge;
+                        jsondata.discharge = data[i].discharge;
+                        jsondata.soc_soll = data[i].soc;
+                        jsondata.soc_ist = soc;
+                        jsondata.residual = data[i].residual;
+                        jsondata.error = "yes";
                         mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
 
+                    } else {
+                        console.log("Modbus Write: " + buf.readInt32BE(0));
+                        jsondata.t = data[i].t;
+                        jsondata.charge = data[i].charge;
+                        jsondata.discharge = data[i].discharge;
+                        jsondata.soc_soll = data[i].soc;
+                        jsondata.soc_ist = soc;
+                        jsondata.residual = data[i].residual;
+                        jsondata.error = "no";
+                        mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
                         console.log(response);
                         console.log(response.exceptionCode);
                     }
                 }
             });
-
-            sleep2(data[i].duration*1000);
+        }
+        */
+        let data = ControlStrategy.find({}, {limit: 5}).fetch();
+        for (let i = 0; i < data.length; ++i) {
+            let d = `${data[i].t} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
+            mqttClient.publish("dynamic", d);
+            Meteor._sleepForMs(data[i].duration*1000);
         }
     }
 });
@@ -302,18 +318,19 @@ Meteor.setInterval(function () {
     Messages.remove({});
 }, 2 * 60 * 1000);
 
-function sleep(time) {
-    return new Promise((resolve) => setTimeout(resolve, time));
-}
+/*function sleep(time) {
+ return new Promise((resolve) => setTimeout(resolve, time));
+ }*/
 
-function sleep2(milliseconds) {
+/*function sleep2(milliseconds) {
     var start = new Date().getTime();
     for (var i = 0; i < 1e10; i++) {
         if ((new Date().getTime() - start) > milliseconds) {
             break;
         }
     }
-}
+}*/
+
 
 setTimeout(() => {
     console.log("802");
