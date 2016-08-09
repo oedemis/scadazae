@@ -18,7 +18,7 @@ Meteor.startup(() => {
             connection: {
                 type: 'tcp',
                 socket: socket,
-                host: '10.210.10.63',
+                host: '172.18.102.136',
                 port: 502,
                 autoConnect: true,
                 autoReconnect: true,
@@ -202,6 +202,9 @@ Meteor.methods({
              }*/
         }
     },
+    deleteDB() {
+        ControlStrategy.remove({});
+    },
     startStrategies: function () {
         console.log("start control strategy");
         /**
@@ -273,12 +276,26 @@ Meteor.methods({
             });
         }
         */
-        let data = ControlStrategy.find({}, {limit: 5}).fetch();
+        let data = ControlStrategy.find({}).fetch();
         for (let i = 0; i < data.length; ++i) {
             let d = `${data[i].t} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
             mqttClient.publish("dynamic", d);
             Meteor._sleepForMs(data[i].duration*1000);
         }
+        /*var rawCollection = ControlStrategy.rawCollection();
+        var cursor = rawCollection.find({}).maxTimeMS(Number.MAX_SAFE_INTEGER);
+        var fetchCursor = Meteor.wrapAsync(function fetchCursor (cursor, cb) {
+            cursor.each(function (err, doc) {
+                if (err) return cb(err);
+                if (!doc) return cb(null, { done: true }); // no more documents
+
+                // use doc here.
+                console.log(doc);
+            });
+        });
+        var myData = fetchCursor(cursor);
+        //console.log(myData)
+        */
     }
 });
 

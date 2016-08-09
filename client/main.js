@@ -115,6 +115,9 @@ Template.SIControl.events({
     },
     'click .startIteration'() {
         Meteor.call('startStrategies');
+    },
+    'click .deleteDB'() {
+        Meteor.call('deleteDB');
     }
 });
 
