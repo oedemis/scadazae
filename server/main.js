@@ -213,6 +213,7 @@ Meteor.methods({
     },
     startStrategies: function (text) {
         console.log("start control strategy");
+        mqttClient.publish("activatemodbus", "");
         /**
          *    1) retrieve residual and duration
          *    2) contruct buffer object
@@ -306,10 +307,10 @@ Meteor.methods({
                 Meteor._sleepForMs(data.duration * 1000);
             });
         }*/
-
         while(ControlStrategy.canRun){
             for (let i = 0; i < data.length; ++i) {
                 if(ControlStrategy.canRun == false){
+                    mqttClient.publish("deactivatemodbus", "");
                     break;
                 }
                 let d = `${data[i].t} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
