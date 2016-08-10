@@ -2,6 +2,7 @@ import { Meteor } from 'meteor/meteor';
 import mqtt from 'mqtt';
 import modbus from 'h5.modbus';
 import net from 'net';
+import moment from 'moment';
 //import sleep from 'sleep';
 
 let cancel = false;
@@ -313,10 +314,9 @@ Meteor.methods({
                     mqttClient.publish("deactivatemodbus", "");
                     break;
                 }
-                let d = `${data[i].t} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
-                mqttClient.publish("dynamic", d);
+                let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
                 Meteor._sleepForMs(data[i].duration * 1000);
-
+                mqttClient.publish("dynamic", d);
             }
         }
 
@@ -326,6 +326,7 @@ Meteor.methods({
     },
     cancelStrategy() {
         console.log("cancel server side");
+        mqttClient.publish("deactivatemodbus", "");
         ControlStrategy.canRun = false;
         /*console.log("reseting");
          StartStrategy.update({_id:"started"}, {

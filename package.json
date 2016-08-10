@@ -8,6 +8,7 @@
     "bufferutil": "^1.2.1",
     "h5.modbus": "github:morkai/h5.modbus#v0.1.0",
     "meteor-node-stubs": "~0.2.0",
+    "moment": "^2.14.1",
     "mqtt": "^1.12.0",
     "sleep": "^3.0.1",
     "utf-8-validate": "^1.2.1"
