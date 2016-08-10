@@ -2,13 +2,15 @@ import { Meteor } from 'meteor/meteor';
 import mqtt from 'mqtt';
 import modbus from 'h5.modbus';
 import net from 'net';
-import sleep from 'sleep';
+//import sleep from 'sleep';
 
-
+let cancel = false;
 let topicQuery;
 let master;
 Meteor.startup(() => {
     // code to run on server at startup
+    StartStrategy.remove({});
+    StartStrategy.insert({_id: "started", running: false});
     Messages.remove({});
     var socket = new net.Socket();
 
@@ -94,6 +96,10 @@ var addMsgToCollection = Meteor.bindEnvironment(function (message) {
 var addBatteryLogsToCollection = Meteor.bindEnvironment(function (message) {
     BatteryLogs.insert(message);
 });
+
+
+ControlStrategy.canRun = true;
+
 
 // some methods called by the client
 Meteor.methods({
@@ -205,7 +211,7 @@ Meteor.methods({
     deleteDB() {
         ControlStrategy.remove({});
     },
-    startStrategies: function () {
+    startStrategies: function (text) {
         console.log("start control strategy");
         /**
          *    1) retrieve residual and duration
@@ -215,87 +221,115 @@ Meteor.methods({
          **/
 
         /*let soc;
-        let jsondata = {};
+         let jsondata = {};
 
 
-        master.readHoldingRegisters(30845, 2, {
-            unit: 3,
-            maxRetries: 1,
-            timeout: 6000,
-            interval: 8000,
-            onComplete: function (err, response) {
-                if (err) {
-                    console.error(err.message);
-                }
-                else {
-                    soc = response.values.readUInt32BE(0);
-                    console.log("SOC Value : " + soc);
-                }
-            }
+         master.readHoldingRegisters(30845, 2, {
+         unit: 3,
+         maxRetries: 1,
+         timeout: 6000,
+         interval: 8000,
+         onComplete: function (err, response) {
+         if (err) {
+         console.error(err.message);
+         }
+         else {
+         soc = response.values.readUInt32BE(0);
+         console.log("SOC Value : " + soc);
+         }
+         }
+         });
+
+         let data = ControlStrategy.find({}, {limit: 5}).fetch();
+         for (let i = 0; i < data.length; ++i) {
+         let b = new Buffer(4);
+         b.writeInt32BE((data[i].residual * 1000).toFixed(0), 0);
+         let buf = new Buffer(b);
+         //console.log("Modbus Write: " + buf.readInt32BE(0));
+
+         master.writeMultipleRegisters(40149, buf, {
+         unit: 3,
+         maxRetries: 1,
+         timeout: 5000,
+         interval: -1,
+         onComplete: function (err, response) {
+         if (err) {
+         console.err(err.message);
+         console.err('I make the error here!');
+         jsondata.t = data[i].t;
+         jsondata.charge = data[i].charge;
+         jsondata.discharge = data[i].discharge;
+         jsondata.soc_soll = data[i].soc;
+         jsondata.soc_ist = soc;
+         jsondata.residual = data[i].residual;
+         jsondata.error = "yes";
+         mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
+
+         } else {
+         console.log("Modbus Write: " + buf.readInt32BE(0));
+         jsondata.t = data[i].t;
+         jsondata.charge = data[i].charge;
+         jsondata.discharge = data[i].discharge;
+         jsondata.soc_soll = data[i].soc;
+         jsondata.soc_ist = soc;
+         jsondata.residual = data[i].residual;
+         jsondata.error = "no";
+         mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
+         console.log(response);
+         console.log(response.exceptionCode);
+         }
+         }
+         });
+         }
+         */
+
+        /*StartStrategy.update({_id: "started"}, {
+            $set: {running: true},
         });
-
-        let data = ControlStrategy.find({}, {limit: 5}).fetch();
-        for (let i = 0; i < data.length; ++i) {
-            let b = new Buffer(4);
-            b.writeInt32BE((data[i].residual * 1000).toFixed(0), 0);
-            let buf = new Buffer(b);
-            //console.log("Modbus Write: " + buf.readInt32BE(0));
-
-            master.writeMultipleRegisters(40149, buf, {
-                unit: 3,
-                maxRetries: 1,
-                timeout: 5000,
-                interval: -1,
-                onComplete: function (err, response) {
-                    if (err) {
-                        console.err(err.message);
-                        console.err('I make the error here!');
-                        jsondata.t = data[i].t;
-                        jsondata.charge = data[i].charge;
-                        jsondata.discharge = data[i].discharge;
-                        jsondata.soc_soll = data[i].soc;
-                        jsondata.soc_ist = soc;
-                        jsondata.residual = data[i].residual;
-                        jsondata.error = "yes";
-                        mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
-
-                    } else {
-                        console.log("Modbus Write: " + buf.readInt32BE(0));
-                        jsondata.t = data[i].t;
-                        jsondata.charge = data[i].charge;
-                        jsondata.discharge = data[i].discharge;
-                        jsondata.soc_soll = data[i].soc;
-                        jsondata.soc_ist = soc;
-                        jsondata.residual = data[i].residual;
-                        jsondata.error = "no";
-                        mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
-                        console.log(response);
-                        console.log(response.exceptionCode);
-                    }
-                }
-            });
-        }
+        let methodStatus = StartStrategy.findOne({_id: "started"});
         */
+        this.unblock();
+        ControlStrategy.canRun = true;
         let data = ControlStrategy.find({}).fetch();
-        for (let i = 0; i < data.length; ++i) {
-            let d = `${data[i].t} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
-            mqttClient.publish("dynamic", d);
-            Meteor._sleepForMs(data[i].duration*1000);
-        }
-        /*var rawCollection = ControlStrategy.rawCollection();
-        var cursor = rawCollection.find({}).maxTimeMS(Number.MAX_SAFE_INTEGER);
-        var fetchCursor = Meteor.wrapAsync(function fetchCursor (cursor, cb) {
-            cursor.each(function (err, doc) {
-                if (err) return cb(err);
-                if (!doc) return cb(null, { done: true }); // no more documents
-
-                // use doc here.
-                console.log(doc);
+        /*if (parseInt(text) === Number.NaN) {
+            data = ControlStrategy.find({}).fetch();
+        } else {
+            data = ControlStrategy.find({}, {limit: parseInt(text)}).fetch();
+        }*/
+       /* while(ControlStrategy.canRun){
+            ControlStrategy.find({}).forEach((data) => {
+                if(ControlStrategy.canRun == false){
+                    break;
+                }
+                let d = `${data.t} ${data.charge} ${data.discharge} ${data.soc} ${data.duration} ${data.residual}`;
+                mqttClient.publish("dynamic", d);
+                Meteor._sleepForMs(data.duration * 1000);
             });
-        });
-        var myData = fetchCursor(cursor);
-        //console.log(myData)
-        */
+        }*/
+
+        while(ControlStrategy.canRun){
+            for (let i = 0; i < data.length; ++i) {
+                if(ControlStrategy.canRun == false){
+                    break;
+                }
+                let d = `${data[i].t} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
+                mqttClient.publish("dynamic", d);
+                Meteor._sleepForMs(data[i].duration * 1000);
+
+            }
+        }
+
+
+
+
+    },
+    cancelStrategy() {
+        console.log("cancel server side");
+        ControlStrategy.canRun = false;
+        /*console.log("reseting");
+         StartStrategy.update({_id:"started"}, {
+         $set: { running: false },
+         });*/
     }
 });
 
@@ -305,7 +339,7 @@ function extractBatteryLogs(jsondata) {
 }
 
 function extractEMData(jsondata) {
-    return `pbezug:${jsondata.pbezug} peinspeisung:${jsondata.peinspeisung} u1:${jsondata.u1} u2:${jsondata.u2} u3:${jsondata.u3} emid:${jsondata.emid}`;
+    return `pbezug:${jsondata.pbezug} peinspeisung:${jsondata.peinspeisung} u1:${jsondata.u1} u2:${jsondata.u2} u3:${jsondata.u3} cosphiL1:${jsondata.cosl1} cosphiL2:${jsondata.cosl2} cosphiL3:${jsondata.cosl3} emid:${jsondata.emid}`;
 }
 
 
@@ -340,13 +374,13 @@ Meteor.setInterval(function () {
  }*/
 
 /*function sleep2(milliseconds) {
-    var start = new Date().getTime();
-    for (var i = 0; i < 1e10; i++) {
-        if ((new Date().getTime() - start) > milliseconds) {
-            break;
-        }
-    }
-}*/
+ var start = new Date().getTime();
+ for (var i = 0; i < 1e10; i++) {
+ if ((new Date().getTime() - start) > milliseconds) {
+ break;
+ }
+ }
+ }*/
 
 
 setTimeout(() => {

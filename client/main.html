@@ -100,7 +100,7 @@
 </template>
 
 <template name="SIControl">
-    <form>
+    <form class="setActivePower">
         <input type="text" name="text" class="pvalue" placeholder="Wirkleistung"/>
         <input type="submit" value="Set">
     </form>
@@ -115,8 +115,14 @@
     {{else}}
         <p><i class="fa fa-spin fa-refresh"></i> Uploading files...</p>
     {{/unless}}
-
+    <br/><br/>
     <button class="startIteration"><i>Start</i></button>
+   <!-- <form class="startIteration">
+        <input type="text" name="text" class="rows" placeholder="#Fetch"/>
+        <input type="submit" value="Start">
+    </form>
+    <br/><br/>-->
+    <button class="cancelIteration"><i>Abbrechen</i></button>
     <br/><br/>
     <button class="deleteDB"><i>Delete DB</i></button>
 

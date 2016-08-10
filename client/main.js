@@ -91,7 +91,7 @@ Template.SIControl.events({
     'click .activate'() {
         Meteor.call('activate');
     },
-    'submit form'(event) {
+    'submit .setActivePower'(event) {
         event.preventDefault();
         const target = event.target;
         const text = target.text.value;
@@ -113,6 +113,19 @@ Template.SIControl.events({
             }
         });
     },
+    'click .cancelIteration'() {
+        console.log("cancel!");
+        Meteor.call('cancelStrategy');
+    },
+    /*'submit .startIteration'(event) {
+        event.preventDefault();
+        const target = event.target;
+        const text = target.text.value;
+        Meteor.call('startStrategies', text);
+
+        // Clear form
+        target.text.value = '';
+    },*/
     'click .startIteration'() {
         Meteor.call('startStrategies');
     },
