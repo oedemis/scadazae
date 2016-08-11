@@ -3,7 +3,7 @@ import mqtt from 'mqtt';
 import modbus from 'h5.modbus';
 import net from 'net';
 import moment from 'moment';
-//import sleep from 'sleep';
+import sleep from 'sleep';
 
 let cancel = false;
 let topicQuery;
@@ -286,42 +286,51 @@ Meteor.methods({
          */
 
         /*StartStrategy.update({_id: "started"}, {
-            $set: {running: true},
-        });
-        let methodStatus = StartStrategy.findOne({_id: "started"});
-        */
+         $set: {running: true},
+         });
+         let methodStatus = StartStrategy.findOne({_id: "started"});
+         */
         this.unblock();
         ControlStrategy.canRun = true;
         let data = ControlStrategy.find({}).fetch();
         /*if (parseInt(text) === Number.NaN) {
-            data = ControlStrategy.find({}).fetch();
-        } else {
-            data = ControlStrategy.find({}, {limit: parseInt(text)}).fetch();
-        }*/
-       /* while(ControlStrategy.canRun){
-            ControlStrategy.find({}).forEach((data) => {
-                if(ControlStrategy.canRun == false){
-                    break;
-                }
-                let d = `${data.t} ${data.charge} ${data.discharge} ${data.soc} ${data.duration} ${data.residual}`;
-                mqttClient.publish("dynamic", d);
-                Meteor._sleepForMs(data.duration * 1000);
-            });
-        }*/
-        while(ControlStrategy.canRun){
-            for (let i = 0; i < data.length; ++i) {
-                if(ControlStrategy.canRun == false){
+         data = ControlStrategy.find({}).fetch();
+         } else {
+         data = ControlStrategy.find({}, {limit: parseInt(text)}).fetch();
+         }*/
+        /* while(ControlStrategy.canRun){
+         ControlStrategy.find({}).forEach((data) => {
+         if(ControlStrategy.canRun == false){
+         break;
+         }
+         let d = `${data.t} ${data.charge} ${data.discharge} ${data.soc} ${data.duration} ${data.residual}`;
+         mqttClient.publish("dynamic", d);
+         Meteor._sleepForMs(data.duration * 1000);
+         });
+         }*/
+
+        while (ControlStrategy.canRun) {
+            console.log("iterate strategy");
+            let i = 0;
+            for (i = 0; i < data.length; ++i) {
+                //Meteor._sleepForMs(data[i].duration * 1000);
+                if (ControlStrategy.canRun == false) {
                     mqttClient.publish("deactivatemodbus", "");
                     break;
                 }
-                let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
-                Meteor._sleepForMs(data[i].duration * 1000);
-                mqttClient.publish("dynamic", d);
+                var Future = Npm.require('fibers/future');
+                var future = new Future();
+                Meteor.setTimeout(function() {
+                    future.return();
+                    let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
+                    mqttClient.publish("dynamic", d);
+                }, data[i].duration*1000);
+                future.wait();
+            }
+            if(i===data.length){
+                mqttClient.publish("deactivatemodbus", "");
             }
         }
-
-
-
 
     },
     cancelStrategy() {
@@ -333,6 +342,17 @@ Meteor.methods({
          $set: { running: false },
          });*/
     }
+});
+
+var fetchCursor = Meteor.wrapAsync(function
+    fetchCursor(cursor, cb) {
+    cursor.each(function (err, doc) {
+        if (err) return cb(err);
+        if (!doc) return cb(null, {done: true}); // no more documents
+
+        // use doc here.
+        console.log(doc.residual);
+    });
 });
 
 function extractBatteryLogs(jsondata) {
@@ -375,14 +395,14 @@ Meteor.setInterval(function () {
  return new Promise((resolve) => setTimeout(resolve, time));
  }*/
 
-/*function sleep2(milliseconds) {
- var start = new Date().getTime();
- for (var i = 0; i < 1e10; i++) {
- if ((new Date().getTime() - start) > milliseconds) {
- break;
- }
- }
- }*/
+function sleep2(milliseconds) {
+    var start = new Date().getTime();
+    for (var i = 0; i < 1e10; i++) {
+        if ((new Date().getTime() - start) > milliseconds) {
+            break;
+        }
+    }
+}
 
 
 setTimeout(() => {
