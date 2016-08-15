@@ -3,7 +3,6 @@ import mqtt from 'mqtt';
 import modbus from 'h5.modbus';
 import net from 'net';
 import moment from 'moment';
-import sleep from 'sleep';
 
 let cancel = false;
 let topicQuery;
@@ -21,7 +20,7 @@ Meteor.startup(() => {
             connection: {
                 type: 'tcp',
                 socket: socket,
-                host: '172.18.102.136',
+                host: '172.18.102.136', //172.18.102.136
                 port: 502,
                 autoConnect: true,
                 autoReconnect: true,
@@ -198,15 +197,16 @@ Meteor.methods({
     },
     parseUpload(data) {
         //check( data, Array );
+        //ControlStrategy.remove({});
         for (let i = 0; i < data.length; i++) {
             let item = data[i];
-            //let exists = ControlStrategy.findOne( { controlId: item.controlId } );
+            //let exists = ControlStrategy.findOne({controlId: item.controlId});
             ControlStrategy.insert(item);
-            /*if ( !exists ) {
-             ControlStrategy.insert( item );
-             } else {
-             console.warn( 'Rejected. This item already exists.' );
-             }*/
+            /*if (!exists) {
+                ControlStrategy.insert(item);
+            } else {
+                console.warn('Rejected. This item already exists.');
+            }*/
         }
     },
     deleteDB() {
@@ -293,6 +293,7 @@ Meteor.methods({
         this.unblock();
         ControlStrategy.canRun = true;
         let data = ControlStrategy.find({}).fetch();
+        console.log("Length " + data.length);
         /*if (parseInt(text) === Number.NaN) {
          data = ControlStrategy.find({}).fetch();
          } else {
@@ -320,15 +321,16 @@ Meteor.methods({
                 }
                 var Future = Npm.require('fibers/future');
                 var future = new Future();
-                Meteor.setTimeout(function() {
+                Meteor.setTimeout(function () {
                     future.return();
-                    let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
-                    mqttClient.publish("dynamic", d);
-                }, data[i].duration*1000);
+                }, data[i].duration * 1000);
                 future.wait();
+                let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
+                console.log("pub: " + d);
+                mqttClient.publish("dynamic", d);
             }
-            if(i===data.length){
-                mqttClient.publish("deactivatemodbus", "");
+            if (i === data.length) {
+                mqttClient.publish("deactivatemodbus", ""); // bricht die modbuswrite in der wago ab
             }
         }
 
