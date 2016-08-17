@@ -7,6 +7,7 @@ import moment from 'moment';
 let cancel = false;
 let topicQuery;
 let master;
+var SOCIST = 200;
 Meteor.startup(() => {
     // code to run on server at startup
     StartStrategy.remove({});
@@ -30,13 +31,16 @@ Meteor.startup(() => {
         },
         suppressTransactionErrors: false,
         retryOnException: true,
-        maxConcurrentRequests: 3,
+        maxConcurrentRequests: 4,
         defaultUnit: 3,
         defaultMaxRetries: 3,
         defaultTimeout: 100
     });
 
     master.once('connected', () => console.log("modbus connected"));
+
+
+
 });
 
 // data has to be published, autopublish is turned off!
@@ -196,17 +200,16 @@ Meteor.methods({
         });
     },
     parseUpload(data) {
-        //check( data, Array );
+        check( data, Array );
         //ControlStrategy.remove({});
-        for (let i = 0; i < data.length; i++) {
-            let item = data[i];
-            //let exists = ControlStrategy.findOne({controlId: item.controlId});
-            ControlStrategy.insert(item);
-            /*if (!exists) {
+        for (let j = 0; j < data.length; j++) {
+            let item = data[j];
+            let exists = ControlStrategy.findOne({controlId: item.controlId});
+            if (!exists) {
                 ControlStrategy.insert(item);
             } else {
                 console.warn('Rejected. This item already exists.');
-            }*/
+            }
         }
     },
     deleteDB() {
@@ -312,25 +315,30 @@ Meteor.methods({
 
         while (ControlStrategy.canRun) {
             console.log("iterate strategy");
-            let i = 0;
+            var i = 0;
             for (i = 0; i < data.length; ++i) {
                 //Meteor._sleepForMs(data[i].duration * 1000);
+
                 if (ControlStrategy.canRun == false) {
                     mqttClient.publish("deactivatemodbus", "");
                     break;
                 }
+
                 var Future = Npm.require('fibers/future');
                 var future = new Future();
                 Meteor.setTimeout(function () {
                     future.return();
                 }, data[i].duration * 1000);
                 future.wait();
-                let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${data[i].residual}`;
+                let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${ parseInt( (parseFloat(data[i].residual)*1000).toFixed(0) ) }`;
                 console.log("pub: " + d);
                 mqttClient.publish("dynamic", d);
             }
             if (i === data.length) {
+                //automaticModbus();
                 mqttClient.publish("deactivatemodbus", ""); // bricht die modbuswrite in der wago ab
+                ControlStrategy.canRun = false;
+                break;
             }
         }
 
@@ -406,13 +414,13 @@ function sleep2(milliseconds) {
     }
 }
 
-
-setTimeout(() => {
+var modbusActivateMaster;
+modbusActivateTimer = setTimeout(() => {
     console.log("802");
     let b = new Buffer(4);
     b.writeUInt32BE(802, 0);
     let activateVal = new Buffer(b);
-    master.writeMultipleRegisters(40151, activateVal, {
+    modbusActivateMaster = master.writeMultipleRegisters(40151, activateVal, {
         unit: 3,
         timeout: 6000,
         maxRetries: 3,
@@ -429,3 +437,73 @@ setTimeout(() => {
         }
     });
 }, 3600000);
+
+// SOC read
+getSOC = Meteor.setTimeout(() => {
+    master.readHoldingRegisters(30845, 2, {
+        unit: 3,
+        timeout: 6000,
+        maxRetries: 1,
+        interval: 10000,
+        onComplete: function (err, response) {
+            if (err) {
+                console.err(err.message);
+                console.log("soc read failed");
+            } else {
+                //let b = new Buffer(4);
+                //b = Buffer.from(response.values);
+                console.log(response.values.readUInt32BE(0));
+                SOCIST = response.values.readUInt32BE(0);
+                //console.log(response.readUInt32BE(0));
+                //console.log(response.exceptionCode);
+            }
+        }
+    });
+}, 9000);
+
+if (SOCIST <= 10) {
+    clearTimeout(modbusActivateTimer);
+    modbusActivateMaster.interval = -1;
+    console.log("803");
+    let b = new Buffer(4);
+    b.writeUInt32BE(803, 0);
+    let deactivateVal = new Buffer(b);
+    master.writeMultipleRegisters(40151, deactivateVal, {
+        unit: 3,
+        timeout: 6000,
+        maxRetries: 3,
+        interval: -1,
+        onComplete: function (err, response) {
+            if (err) {
+                console.err(err.message);
+                console.log("automatic activation cleared and deactivate called");
+            } else {
+                console.log(response);
+                console.log("deactivate");
+                console.log(response.exceptionCode);
+            }
+        }
+    });
+}
+
+function automaticModbus(){
+    modbusActivateMaster.interval = -1;
+    console.log("803");
+    let b = new Buffer(4);
+    b.writeUInt32BE(803, 0);
+    let buf2 = new Buffer(b);
+    master.writeMultipleRegisters(40151, buf2, {
+        unit: 3,
+        timeout: 6000,
+        maxRetries: 3,
+        interval: -1,
+        onComplete: function (err, response) {
+            if (err) {
+                console.err(err.message);
+            } else {
+                console.log(response);
+                console.log(response.exceptionCode);
+            }
+        }
+    });
+}

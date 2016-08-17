@@ -98,6 +98,7 @@ Template.SIControl.events({
         Meteor.call('writeActivePower', text);
     },
     'change [name="uploadCSV"]' (event, template) {
+        event.preventDefault();
         template.uploading.set( true );
         Papa.parse(event.target.files[0], {
             header: true,
