@@ -4,10 +4,12 @@ import modbus from 'h5.modbus';
 import net from 'net';
 import moment from 'moment';
 
+
 let cancel = false;
 let topicQuery;
 let master;
 var SOCIST = 200;
+var pid;
 Meteor.startup(() => {
     // code to run on server at startup
     StartStrategy.remove({});
@@ -38,7 +40,6 @@ Meteor.startup(() => {
     });
 
     master.once('connected', () => console.log("modbus connected"));
-
 
 
 });
@@ -293,9 +294,9 @@ Meteor.methods({
          });
          let methodStatus = StartStrategy.findOne({_id: "started"});
          */
-        this.unblock();
+        /////////////////////////////////////////////this.unblock();
         ControlStrategy.canRun = true;
-        let data = ControlStrategy.find({}).fetch();
+        //let data = ControlStrategy.find({}).fetch();
         console.log("Length " + data.length);
         /*if (parseInt(text) === Number.NaN) {
          data = ControlStrategy.find({}).fetch();
@@ -313,11 +314,11 @@ Meteor.methods({
          });
          }*/
 
-        while (ControlStrategy.canRun) {
+
+        /*while (ControlStrategy.canRun) {
             console.log("iterate strategy");
             var i = 0;
             for (i = 0; i < data.length; ++i) {
-                //Meteor._sleepForMs(data[i].duration * 1000);
 
                 if (ControlStrategy.canRun == false) {
                     mqttClient.publish("deactivatemodbus", "");
@@ -328,25 +329,41 @@ Meteor.methods({
                 var future = new Future();
                 Meteor.setTimeout(function () {
                     future.return();
-                }, data[i].duration * 1000);
+                }, parseInt(data[i].duration) * 1000);
                 future.wait();
+
                 let d = `${moment(data[i].t).format("YYYY-MM-DD HH:mm:ss")} ${data[i].charge} ${data[i].discharge} ${data[i].soc} ${data[i].duration} ${ parseInt( (parseFloat(data[i].residual)*1000).toFixed(0) ) }`;
-                console.log("pub: " + d);
                 mqttClient.publish("dynamic", d);
+
             }
             if (i === data.length) {
+                mqttClient.publish("shit", "shit"); // bricht die modbuswrite in der wago ab
                 //automaticModbus();
-                mqttClient.publish("deactivatemodbus", ""); // bricht die modbuswrite in der wago ab
+                //mqttClient.publish("deactivatemodbus", ""); // bricht die modbuswrite in der wago ab
                 ControlStrategy.canRun = false;
                 break;
             }
-        }
+        }*/
+        var exec = Npm.require('child_process').exec;
+        pid = exec('python /Users/oedemis/Desktop/Master/SMA/emulator/zaescada/load_to_broker_dynamic.py', function (error, stdout, stderr) {
+            if (error instanceof Error)
+                throw error;
+            process.stderr.write(error);
+            process.stdout.write(stdout);
+            process.exit(stderr);
+            process.on('SIGINT', function () {
+                console.log('Got a SIGINT. Goodbye cruel world');
+                process.exit(0);
+            });
+        });
+
 
     },
     cancelStrategy() {
         console.log("cancel server side");
         mqttClient.publish("deactivatemodbus", "");
         ControlStrategy.canRun = false;
+        pid.kill('SIGINT');
         /*console.log("reseting");
          StartStrategy.update({_id:"started"}, {
          $set: { running: false },
@@ -359,9 +376,8 @@ var fetchCursor = Meteor.wrapAsync(function
     cursor.each(function (err, doc) {
         if (err) return cb(err);
         if (!doc) return cb(null, {done: true}); // no more documents
-
         // use doc here.
-        console.log(doc.residual);
+        console.log(doc);
     });
 });
 
@@ -407,7 +423,7 @@ Meteor.setInterval(function () {
 
 function sleep2(milliseconds) {
     var start = new Date().getTime();
-    for (var i = 0; i < 1e10; i++) {
+    for (var i = 0; i < 1e10; i++) { //1e10
         if ((new Date().getTime() - start) > milliseconds) {
             break;
         }

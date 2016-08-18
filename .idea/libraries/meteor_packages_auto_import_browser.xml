@@ -27,6 +27,7 @@
         <item url="file://$USER_HOME$/.meteor/packages/spacebars-compiler/1.0.12/web.browser/templatetag.js" />
         <item url="file://$USER_HOME$/.meteor/packages/spacebars-compiler/1.0.12/web.browser/codegen.js" />
         <item url="file://$USER_HOME$/.meteor/packages/spacebars-compiler/1.0.12/web.browser/optimizer.js" />
+        <item url="file://$USER_HOME$/.meteor/packages/froatsnook_sleep/1.2.0/web.browser/client/sleep.js" />
         <item url="file://$USER_HOME$/.meteor/packages/ddp-common/1.2.6/web.browser/random_stream.js" />
         <item url="file://$USER_HOME$/.meteor/packages/ddp-common/1.2.6/web.browser/method_invocation.js" />
         <item url="file://$USER_HOME$/.meteor/packages/ddp-common/1.2.6/web.browser/namespace.js" />
@@ -197,6 +198,7 @@
       <root url="file://$USER_HOME$/.meteor/packages/spacebars-compiler/1.0.12/web.browser/templatetag.js" />
       <root url="file://$USER_HOME$/.meteor/packages/spacebars-compiler/1.0.12/web.browser/codegen.js" />
       <root url="file://$USER_HOME$/.meteor/packages/spacebars-compiler/1.0.12/web.browser/optimizer.js" />
+      <root url="file://$USER_HOME$/.meteor/packages/froatsnook_sleep/1.2.0/web.browser/client/sleep.js" />
       <root url="file://$USER_HOME$/.meteor/packages/ddp-common/1.2.6/web.browser/random_stream.js" />
       <root url="file://$USER_HOME$/.meteor/packages/ddp-common/1.2.6/web.browser/method_invocation.js" />
       <root url="file://$USER_HOME$/.meteor/packages/ddp-common/1.2.6/web.browser/namespace.js" />
