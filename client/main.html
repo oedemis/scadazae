@@ -109,12 +109,10 @@
     <button class="activate"><i>Activate</i></button>
     <button class="deactivate"><i>Deactivate</i></button>
     <br/><br/>
+    
+    {{> upload2}} 
 
-    {{#unless uploading}}
-        <input type="file" name="uploadCSV">
-    {{else}}
-        <p><i class="fa fa-spin fa-refresh"></i> Uploading files...</p>
-    {{/unless}}
+
     <br/><br/>
     <button class="startIteration"><i>Start</i></button>
    <!-- <form class="startIteration">
@@ -124,7 +122,11 @@
     <br/><br/>-->
     <button class="cancelIteration"><i>Abbrechen</i></button>
     <br/><br/>
-    <button class="deleteDB"><i>Delete DB</i></button>
+    <!--<button class="deleteDB"><i>Delete DB</i></button>-->
+    
+    {{> fileTable}}
+    
+
 
 </template>
 
@@ -135,3 +137,73 @@
 <template name="NodeRed">
     NodeRed
 </template>
+
+
+<template name="upload2">
+    <button type="button" name="upload">Select files</button>
+</template>
+
+
+<template name="uploadForm">
+    <form>
+        <button class="btn btn-default" name="upload" type="button">
+            <span class="glyphicon glyphicon-upload"></span>
+            <span>{{t "Upload"}}</span>
+        </button>
+        <button class="btn btn-default" name="import" type="button">
+            <span class="glyphicon glyphicon-globe"></span>
+            <span>{{t "Import from URL"}}</span>
+        </button>
+    </form>
+</template>
+
+<template name="fileTable">
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <!--<th>Preview</th>-->
+            <th width="20%">Name</th>
+            <th width="10%">Type</th>
+            <th width="10%">Extension</th>
+            <th width="10%" style="text-align: right">Size</th>
+            <th width="10%" style="text-align: right">Progress</th>
+            <th style="text-align: right">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each files}}
+            {{> fileTableRow}}
+        {{else}}
+            <tr>
+                <td colspan="8">
+                    <span class="empty">No file</span>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+</template>
+
+
+<template name="fileTableRow">
+    <tr>
+        <td><a href="{{url}}?token={{token}}" target="_blank">{{name}}</a></td>
+        <td>{{type}}</td>
+        <td>{{extension}}</td>
+        <td style="text-align: right; white-space: nowrap">{{formatSize size}}</td>
+        <td style="text-align: right">{{progress}}%</td>
+         <td style="text-align: right">
+            <div class="btn-group" role="group">
+                    <button class="btn btn-default" name="delete" type="button" title="Delete">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        <span></span>
+                    </button>
+                    <button class="btn btn-default" name="start" type="button" title="Start">
+                        <span class="glyphicon glyphicon-play"></span>
+                        <span></span>
+                    </button>
+            </div>
+        </td>
+    </tr>
+</template>
+

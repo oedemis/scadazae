@@ -27,3 +27,5 @@ fortawesome:fontawesome
 check@1.2.3
 mixmax:smart-disconnect
 froatsnook:sleep
+jalik:ufs@=0.6.4
+jalik:ufs-local@=0.2.5

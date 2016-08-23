@@ -1,11 +1,15 @@
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
+import {UploadFS} from 'meteor/jalik:ufs';
+
+import '/imports/stores/files.js';
 
 import './main.html';
 
 // subscribe to the published collection
 Meteor.subscribe("mqttMessages");
 Meteor.subscribe("mqttBatteryLogs");
+Meteor.subscribe('files');
 //Meteor.subscribe("controlstrategies");
 
 
@@ -135,6 +139,66 @@ Template.SIControl.events({
     }
 });
 
+Template.upload2.events({
+    'click button[name=upload]': function (ev) {
+        //var self = this;  
+        ev.preventDefault();
+        UploadFS.selectFiles(function (file) {
+            // Prepare the file to insert in database, note that we don't provide an URL,
+            // it will be set automatically by the uploader when file transfer is complete.
+            let strategy = {
+                name: file.name,
+                size: file.size,
+                type: file.type
+            };
+
+            // Create a new Uploader for this file
+            let uploader = new UploadFS.Uploader({
+                // This is where the uploader will save the file
+                store: FileStore,
+                // Optimize speed transfer by increasing/decreasing chunk size automatically
+                //adaptive: true,
+                // Define the upload capacity (if upload speed is 1MB/s, then it will try to maintain upload at 80%, so 800KB/s)
+                // (used only if adaptive = true)
+                //capacity: 0.8, // 80%
+                // The size of each chunk sent to the server
+                //chunkSize: 8 * 1024, // 8k
+                // The max chunk size (used only if adaptive = true)
+                //maxChunkSize: 128 * 1024, // 128k
+                // This tells how many tries to do if an error occurs during upload
+                //maxTries: 5,
+                // The File/Blob object containing the data
+                data: file,
+                // The document to save in the collection  strategy
+                file: file
+            });
+
+            uploader.onAbort = function (file) {
+                console.log(file.name + ' upload aborted');
+            };
+            uploader.onComplete = function (file) {
+                console.log(file.name + ' upload completed');
+            };
+            uploader.onCreate = function (file) {
+                console.log(file.name + ' created');
+                uploader[file._id] = this;
+            };
+            uploader.onError = function (err, file) {
+                console.error(file.name + ' could not be uploaded', err);
+            };
+            uploader.onProgress = function (file, progress) {
+                console.log(file.name + ' :'
+                    + "\n" + (progress * 100).toFixed(2) + '%'
+                    + "\n" + (this.getSpeed() / 1024).toFixed(2) + 'KB/s'
+                    + "\n" + 'elapsed: ' + (this.getElapsedTime() / 1000).toFixed(2) + 's'
+                    + "\n" + 'remaining: ' + (this.getRemainingTime() / 1000).toFixed(2) + 's'
+                );
+            };
+            uploader.start();
+        });
+    }
+});
+
 
 // get the new query from the input field and send it to the server, reset field
 // tell the dependency, that it has changed and has to be run again
@@ -155,5 +219,50 @@ Template.SIControl.onCreated(() => {
 Template.SIControl.helpers({
     uploading() {
         return Template.instance().uploading.get();
+    }
+});
+
+
+Template.fileTable.helpers({
+    files: function () {
+        return Files.find({}, {
+            sort: {createdAt: 1, name: 1}
+        });
+    }
+});
+
+Template.fileTableRow.events({
+    'click [name=delete]': function (ev) {
+        ev.preventDefault();
+        Files.remove(this._id);
+    },
+    'click [name=start]' (ev) {
+        ev.preventDefault();
+        Meteor.call('start', this);
+    }
+});
+
+Template.fileTableRow.helpers({
+    canAbort: function () {
+        return workers.hasOwnProperty(this._id);
+    },
+    canDelete: function () {
+        let userId = Meteor.userId();
+        return userId === this.userId || !this.userId;
+    },
+    formatSize: function (bytes) {
+        if (bytes >= 1000000000) {
+            return (bytes / 1000000000).toFixed(2) + ' GB';
+        }
+        if (bytes >= 1000000) {
+            return (bytes / 1000000).toFixed(2) + ' MB';
+        }
+        if (bytes >= 1000) {
+            return (bytes / 1000).toFixed(2) + ' KB';
+        }
+        return bytes + ' B';
+    },
+    progress: function () {
+        return Math.round(this.progress * 10000) / 100;
     }
 });

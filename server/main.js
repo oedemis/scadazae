@@ -4,6 +4,8 @@ import modbus from 'h5.modbus';
 import net from 'net';
 import moment from 'moment';
 
+import '/imports/stores/files.js';
+
 
 let cancel = false;
 let topicQuery;
@@ -16,7 +18,7 @@ Meteor.startup(() => {
     StartStrategy.insert({_id: "started", running: false});
     Messages.remove({});
     var socket = new net.Socket();
-
+    /*
     master = modbus.createMaster({
         transport: {
             type: 'ip',
@@ -40,6 +42,7 @@ Meteor.startup(() => {
     });
 
     master.once('connected', () => console.log("modbus connected"));
+    */
 
 
 });
@@ -51,6 +54,9 @@ Meteor.publish("mqttMessages", function () {
 });
 Meteor.publish("mqttBatteryLogs", function () {
     return BatteryLogs.find({});
+});
+Meteor.publish("files", function () {
+    return Files.find({});
 });
 //Meteor.publish("controlstrategies", () => {return ControlStrategy.find({}) } );
 
@@ -73,7 +79,7 @@ mqttClient
             };
             addMsgToCollection(msg);
         }
-        if (topic.startsWith("em/")) {
+        if (topic.startsWith("em/sascha")) {
             msg = {
                 message: extractEMData(JSON.parse(message)),
                 topic: topic,
@@ -201,7 +207,7 @@ Meteor.methods({
         });
     },
     parseUpload(data) {
-        check( data, Array );
+        /*check( data, Array );
         //ControlStrategy.remove({});
         for (let j = 0; j < data.length; j++) {
             let item = data[j];
@@ -211,108 +217,21 @@ Meteor.methods({
             } else {
                 console.warn('Rejected. This item already exists.');
             }
-        }
+        }*/
     },
     deleteDB() {
         ControlStrategy.remove({});
     },
     startStrategies: function (text) {
         console.log("start control strategy");
-        mqttClient.publish("activatemodbus", "");
-        /**
-         *    1) retrieve residual and duration
-         *    2) contruct buffer object
-         *    3) write with modbus t=seconds long
-         *    4) log the data via mqtt
-         **/
+        exec = Npm.require('child_process').exec;
+        
+        //mqttClient.publish("activatemodbus", "");
 
-        /*let soc;
-         let jsondata = {};
-
-
-         master.readHoldingRegisters(30845, 2, {
-         unit: 3,
-         maxRetries: 1,
-         timeout: 6000,
-         interval: 8000,
-         onComplete: function (err, response) {
-         if (err) {
-         console.error(err.message);
-         }
-         else {
-         soc = response.values.readUInt32BE(0);
-         console.log("SOC Value : " + soc);
-         }
-         }
-         });
-
-         let data = ControlStrategy.find({}, {limit: 5}).fetch();
-         for (let i = 0; i < data.length; ++i) {
-         let b = new Buffer(4);
-         b.writeInt32BE((data[i].residual * 1000).toFixed(0), 0);
-         let buf = new Buffer(b);
-         //console.log("Modbus Write: " + buf.readInt32BE(0));
-
-         master.writeMultipleRegisters(40149, buf, {
-         unit: 3,
-         maxRetries: 1,
-         timeout: 5000,
-         interval: -1,
-         onComplete: function (err, response) {
-         if (err) {
-         console.err(err.message);
-         console.err('I make the error here!');
-         jsondata.t = data[i].t;
-         jsondata.charge = data[i].charge;
-         jsondata.discharge = data[i].discharge;
-         jsondata.soc_soll = data[i].soc;
-         jsondata.soc_ist = soc;
-         jsondata.residual = data[i].residual;
-         jsondata.error = "yes";
-         mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
-
-         } else {
-         console.log("Modbus Write: " + buf.readInt32BE(0));
-         jsondata.t = data[i].t;
-         jsondata.charge = data[i].charge;
-         jsondata.discharge = data[i].discharge;
-         jsondata.soc_soll = data[i].soc;
-         jsondata.soc_ist = soc;
-         jsondata.residual = data[i].residual;
-         jsondata.error = "no";
-         mqttClient.publish("dynamicfeedinlogs", JSON.stringify(jsondata));
-         console.log(response);
-         console.log(response.exceptionCode);
-         }
-         }
-         });
-         }
-         */
-
-        /*StartStrategy.update({_id: "started"}, {
-         $set: {running: true},
-         });
-         let methodStatus = StartStrategy.findOne({_id: "started"});
-         */
         /////////////////////////////////////////////this.unblock();
-        ControlStrategy.canRun = true;
+        //ControlStrategy.canRun = true;
         //let data = ControlStrategy.find({}).fetch();
-        console.log("Length " + data.length);
-        /*if (parseInt(text) === Number.NaN) {
-         data = ControlStrategy.find({}).fetch();
-         } else {
-         data = ControlStrategy.find({}, {limit: parseInt(text)}).fetch();
-         }*/
-        /* while(ControlStrategy.canRun){
-         ControlStrategy.find({}).forEach((data) => {
-         if(ControlStrategy.canRun == false){
-         break;
-         }
-         let d = `${data.t} ${data.charge} ${data.discharge} ${data.soc} ${data.duration} ${data.residual}`;
-         mqttClient.publish("dynamic", d);
-         Meteor._sleepForMs(data.duration * 1000);
-         });
-         }*/
+        ///console.log("Length " + data.length);
 
 
         /*while (ControlStrategy.canRun) {
@@ -344,8 +263,31 @@ Meteor.methods({
                 break;
             }
         }*/
-        var exec = Npm.require('child_process').exec;
-        pid = exec('python /Users/oedemis/Desktop/Master/SMA/emulator/zaescada/load_to_broker_dynamic.py', function (error, stdout, stderr) {
+        /*var exec = Npm.require('child_process').exec;
+        pid = exec('nohup java -jar java ' + '' + ' &', function (error, stdout, stderr) {
+            if (error instanceof Error)
+                throw error;
+            //process.stderr.write(error);
+            process.stdout.write(stdout);
+            process.exit(stderr);
+            process.on('SIGINT', function () {
+                console.log('Got a SIGINT. Goodbye cruel world');
+                process.exit(0);
+            });
+        });*/
+
+
+    },
+
+    start(data) {
+        console.log(data);
+        //console.log(addslashes("tmux new -s 'mqcsv' java -jar ./MQParser.jar ") + data.url);
+        //let s = addslashes("tmux new -s 'mqcsv' java -jar ./MQParser.jar ") + data.url;
+        let s = "tmux new-window java -jar MQParser.jar " + data.name;
+        /*var exec = Npm.require('child_process').exec;
+        pid = exec(s , 
+            {cwd: "/Users/oedemis/Desktop/Master/SMA/emulator/zaescada/"},
+            function (error, stdout, stderr) {
             if (error instanceof Error)
                 throw error;
             process.stderr.write(error);
@@ -353,15 +295,31 @@ Meteor.methods({
             process.exit(stderr);
             process.on('SIGINT', function () {
                 console.log('Got a SIGINT. Goodbye cruel world');
-                process.exit(0);
+                //process.exit(0);
             });
+        });*/
+        
+        const spawn = Npm.require('child_process').spawn;
+        //pid = spawn("tmux new -s \'mqcsv\' java", ['-jar', './MQParser.jar', data.name]); "-s \'mqcsv\'"
+        /*pid = spawn("tmux", ["new-session", '-s', "\'mqcsv\'", 'java', '-jar', 'MQParser.jar', data.name],
+            {cwd: "/Users/oedemis/Desktop/Master/SMA/emulator/zaescada/"}
+        );*/
+        pid = spawn("java", ["-jar", 'MQParser.jar', data.name ],
+            {cwd: "/Users/oedemis/Desktop/Master/SMA/emulator/zaescada/", detached: true}
+        );
+        pid.stderr.setEncoding('utf8');
+        pid.stderr.on('data', function (data){
+          console.log(data);
         });
+        pid.on('close', (code) => {
+          console.log(`child process exited with code ${code}`);
+        });
+        pid.unref();
+    }, 
 
-
-    },
     cancelStrategy() {
         console.log("cancel server side");
-        mqttClient.publish("deactivatemodbus", "");
+        //mqttClient.publish("deactivatemodbus", "");
         ControlStrategy.canRun = false;
         pid.kill('SIGINT');
         /*console.log("reseting");
@@ -429,7 +387,7 @@ function sleep2(milliseconds) {
         }
     }
 }
-
+/*
 var modbusActivateMaster;
 modbusActivateTimer = setTimeout(() => {
     console.log("802");
@@ -453,8 +411,10 @@ modbusActivateTimer = setTimeout(() => {
         }
     });
 }, 3600000);
+*/
 
 // SOC read
+/*
 getSOC = Meteor.setTimeout(() => {
     master.readHoldingRegisters(30845, 2, {
         unit: 3,
@@ -476,6 +436,7 @@ getSOC = Meteor.setTimeout(() => {
         }
     });
 }, 9000);
+*/
 
 if (SOCIST <= 10) {
     clearTimeout(modbusActivateTimer);
@@ -522,4 +483,8 @@ function automaticModbus(){
             }
         }
     });
+}
+
+function addslashes( str ) {
+    return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
 }
